@@ -1,74 +1,121 @@
+use super::api::Tree;
+
 macro_rules! wml_impl {
 
     // opening tag: <WidgetType { key: value }>
-    (@wml($tree:ident) += [ <$widget_type:ty { $($prop_key:ident: $prop_value:expr),* }> $($wml:tt)* ]) => {
-        $(println!("OPENING TAG : tag=({}) key=({}) value=({})", stringify!($widget_type), stringify!($prop_key), $prop_value);)*
+    ([ $tree:ident ] += [ <$widget_type:ty { $($prop_key:ident: $prop_value:expr),* }> $($wml:tt)* ]) => {
+        println!("OPENING TAG: {} {{", stringify!($widget_type));
+        $(println!("    {} => {}", stringify!($prop_key), $prop_value);)*
+        println!("}}\n");
 
         wml_impl! {
-            @wml($tree) += [ $($wml)* ]
+            [ $tree ] += [ $($wml)* ]
         }
     };
 
     // closing tag: <;WidgetType>
-    (@wml($tree:ident) += [ <;$widget_type:ident> $($wml:tt)* ]) => {
-        println!("CLOSING TAG : tag=({})", stringify!($widget_type));
+    ([ $tree:ident ] += [ <;$widget_type:ty> $($wml:tt)* ]) => {
+        println!("CLOSING TAG: {}\n", stringify!($widget_type));
 
         wml_impl! {
-            @wml($tree) += [ $($wml)* ]
+            [ $tree ] += [ $($wml)* ]
         }
     };
 
     // self closing tag: <WidgetType { key: value };>
-    (@wml($tree:ident) += [ <$widget_type:ty { $($prop_key:ident: $prop_value:expr),* };> $($wml:tt)* ]) => {
-        $(println!("SELF CLOSING TAG : tag=({}) key=({}) value=({})", stringify!($widget_type), stringify!($prop_key), $prop_value);)*
+    ([ $tree:ident ] += [ <$widget_type:ty { $($prop_key:ident: $prop_value:expr),* };> $($wml:tt)* ]) => {
+        println!("SELF CLOSING TAG: {} {{", stringify!($widget_type));
+        $(println!("    {} => {}", stringify!($prop_key), $prop_value);)*
+        println!("}}\n");
 
         wml_impl! {
-            @wml($tree) += [ $($wml)* ]
+            [ $tree ] += [ $($wml)* ]
+        }
+    };
+
+    // for loop: for { x in y } { <WidgetType {};> }
+    ([ $tree:ident ] += [ for { $var:ident in $iter:expr } { $($repeat:tt)* } $($wml:tt)* ]) => {
+        println!("FOR LOOP: {} in {}\n", stringify!($var), stringify!($iter));
+
+        for $var in $iter {
+            wml_impl! {
+                [ $tree ] += [ $($repeat)* ]
+            }
+        }
+
+        wml_impl! {
+            [ $tree ] += [ $($wml)* ]
+        }
+    };
+
+    // if statement: if { condition } { <WidgetType {};>
+    ([ $tree:ident ] += [ if { $cond:expr } { $($then:tt)* } $($wml:tt)* ]) => {
+        println!("IF STMT: {}\n", stringify!($cond));
+
+        if $cond {
+            wml_impl! {
+                [ $tree ] += [ $($then)* ]
+            }
+        }
+
+        wml_impl! {
+            [ $tree ] += [ $($wml)* ]
+        }
+    };
+
+    // end of statement: <;>
+    ([ $tree:ident ] += [ <;> $($wml:tt)* ]) => {
+        println!("END OF STMT\n");
+
+        wml_impl! {
+            [ $tree ] += [ $($wml)* ]
         }
     };
 
     // end of macro:
-    (@wml($tree:ident) += [ ]) => {
+    ([ $tree:ident ] += [ ]) => {
         println!("END OF MACRO");
     };
-
-    (@wml($tree:ident) += [ @wml($tree:ident) += [ $($wml:tt)* ] ]) => {
-        println!("this should never happen; if it does, you're doing something wrong.");
-    }
 }
 
 #[macro_export]
 macro_rules! wml {
 
-    // entry point:
+    // beginning of macro:
     ($($wml:tt)*) => {
         {
-            let mut tree = "eff";
+            let mut tree = Tree::new();
 
             wml_impl! {
-                @wml(tree) += [ $($wml)* ]
-            }
+                [ tree ] += [ $($wml)* ]
+            };
+
+            tree
         }
     };
 }
 
 #[test]
 fn oof() {
+    let about_us_enabled = true;
+
     wml! {
         <FlexBox { direction: "vertical", justify: "center" }>
             <TabController { active: 0 }>
                 <Tab { icon: "home", label: "Home" };>
-                <Tab { icon: "about_us", label: "About Us" };>
+
+                if { about_us_enabled } {
+                    <Tab { icon: "about_us", label: "About Us" };>
+                }
+
             <;TabController>
-            <Pane { grow: true }>
-                <Form { on_submit: false }>
-                    <FormField { data_type: "string", id: "username", label: "Username" };>
-                    <FormField { data_type: "string", id: "password", label: "Password", mask: '•' };>
-                    <Button { emit: "submit" }>
-                        <Text { content: "Login" };>
-                    <;Button>
-                <;Form>
-            <;Pane>
+            <List { title: "Title Here" }>
+
+                for { i in 0..10 } {
+                    <ListItem { x: 0 };>
+                }
+
+            <;List>
         <;FlexBox>
-    }
+    };
 }
