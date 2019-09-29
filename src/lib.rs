@@ -1,6 +1,5 @@
-mod api;
-mod core;
-mod wml;
+pub mod core;
+pub mod wml;
 
-#[cfg(test)]
-mod tests;
+//#[cfg(test)]
+//mod tests;
