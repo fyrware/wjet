@@ -1,5 +1,7 @@
+use crate::wml::wml_token;
+
 #[macro_export]
-macro_rules! markup {
+macro_rules! wml_markup {
 
     (|$lexer: ident, $tree: ident| -> (<{ if $condition: expr }>$($wml: tt)*)) => {
         $lexer.start_condition($condition);
@@ -7,11 +9,28 @@ macro_rules! markup {
         match $lexer.condition() {
             Some(false) => (),
             Some(true) | None => {
-                $lexer.start_grammar(crate::wml::wml_token::Token::If);
+                $lexer.start_grammar(wml_token::Token::If);
             }
         }
 
-        markup!(|$lexer, $tree| -> ($($wml)*));
+        wml_markup!(|$lexer, $tree| -> ($($wml)*));
+    };
+
+    (|$lexer: ident, $tree: ident| -> (<{ else }>$($wml: tt)*)) => {
+
+        match $lexer.condition() {
+            Some(false) => {
+                $lexer.end_condition();
+                $lexer.start_condition(true);
+            },
+            Some(true) => {
+                $lexer.end_condition();
+                $lexer.start_condition(false);
+            },
+            None => ()
+        }
+
+        wml_markup!(|$lexer, $tree| -> ($($wml)*));
     };
 
     (|$lexer: ident, $tree: ident| -> (<;>$($wml: tt)*)) => {
@@ -21,7 +40,7 @@ macro_rules! markup {
             Some(true) | None => {
 
                 match $lexer.grammar() {
-                    Some(crate::wml::wml_token::Token::If) => {
+                    Some(wml_token::Token::If) => {
                         $lexer.end_condition();
                     },
                     _ => ()
@@ -31,35 +50,51 @@ macro_rules! markup {
             }
         }
 
-        markup!(|$lexer, $tree| -> ($($wml)*));
+        wml_markup!(|$lexer, $tree| -> ($($wml)*));
     };
 
-    (|$lexer: ident, $tree: ident| -> (<$type: ty { $($key: ident: $value: expr),* }>$($wml: tt)*)) => {
+    (|$lexer: ident, $tree: ident| -> (<{ $expression: expr };>$($wml: tt)*)) => {
 
         match $lexer.condition() {
             Some(false) => (),
             Some(true) | None => {
-                $lexer.start_grammar(crate::wml::wml_token::Token::NodeStart);
+                println!("EXPRESS: {}", stringify!($expression));
             }
         }
 
-        markup!(|$lexer, $tree| -> ($($wml)*));
+        wml_markup!(|$lexer, $tree| -> ($($wml)*));
     };
 
-    (|$lexer: ident, $tree: ident| -> (<$type: ty { $($key: ident: $value: expr),* };>$($wml: tt)*)) => {
+    (|$lexer: ident, $tree: ident| -> (<$type: ty { $($field: ident: $value: expr),* }>$($wml: tt)*)) => {
 
         match $lexer.condition() {
             Some(false) => (),
             Some(true) | None => {
-                $lexer.start_grammar(crate::wml::wml_token::Token::NodeStart);
+                let mut widget = <$type>::new();
+
+                $(widget.$field = $value;)*
+
+                $lexer.start_grammar(wml_token::Token::NodeStart);
+            }
+        }
+
+        wml_markup!(|$lexer, $tree| -> ($($wml)*));
+    };
+
+    (|$lexer: ident, $tree: ident| -> (<$type: ty { $($field: ident: $value: expr),* };>$($wml: tt)*)) => {
+
+        match $lexer.condition() {
+            Some(false) => (),
+            Some(true) | None => {
+                $lexer.start_grammar(wml_token::Token::NodeStart);
                 $lexer.end_grammar();
             }
         }
 
-        markup!(|$lexer, $tree| -> ($($wml)*));
+        wml_markup!(|$lexer, $tree| -> ($($wml)*));
     };
 
-    (|$lexer: ident, $tree: ident| -> (<;$type: ty>$($wml: tt)*)) => {
+    (|$lexer: ident, $tree: ident| -> (<$type: ty;>$($wml: tt)*)) => {
 
         match $lexer.condition() {
             Some(false) => (),
@@ -68,7 +103,7 @@ macro_rules! markup {
             }
         }
 
-        markup!(|$lexer, $tree| -> ($($wml)*));
+        wml_markup!(|$lexer, $tree| -> ($($wml)*));
     };
 
     (|$lexer: ident, $tree: ident| -> ()) => {};
