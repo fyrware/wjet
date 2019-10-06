@@ -1,6 +1,7 @@
 pub struct Lexer {
     conditions: std::collections::VecDeque<bool>,
-    grammar: std::collections::VecDeque<super::wml_token::Token>
+    grammar: std::collections::VecDeque<super::wml_token::Token>,
+    iterators: std::collections::VecDeque<u32>
 }
 
 impl Lexer {
@@ -8,7 +9,8 @@ impl Lexer {
     pub fn new() -> Lexer {
         return Lexer {
             conditions: std::collections::VecDeque::new(),
-            grammar: std::collections::VecDeque::new()
+            grammar: std::collections::VecDeque::new(),
+            iterators: std::collections::VecDeque::new()
         };
     }
 

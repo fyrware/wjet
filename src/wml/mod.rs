@@ -11,12 +11,11 @@ macro_rules! wml {
 
     ($($wml:tt)*) => {
         {
-            let mut wml_lexer = wml_lexer::Lexer::new();
-            let mut wml_tree = core_tree::Tree::new();
+            let mut wjet_tree = core_tree::Tree::new();
 
-            wml_markup!(|wml_lexer, wml_tree| -> ($($wml)*));
+            wml_markup!(|wjet_tree| -> ($($wml)*));
 
-            return wml_tree;
+            return wjet_tree;
         }
     };
 }
@@ -26,14 +25,17 @@ macro_rules! wml {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 struct Block {
-    pub foo: bool
+    pub foo: bool,
+    pub baz: u8
 }
 
 impl Block {
-    fn new() -> Self {
-        Block {
-            foo: true
-        }
+
+    fn new() -> Block {
+        return Block {
+            foo: true,
+            baz: 0
+        };
     }
 }
 
@@ -48,18 +50,33 @@ fn render(condition: bool) -> core_tree::Tree {
     let bar = false;
 
     return wml! {
-       <Block { foo: bar }>
-            <{ if condition }>
-                <Block { foo: bar };>
-            <{ else }>
-                <{ "Hello World!" };>
-            <;>
-        <Block;>
-        <Block { foo: condition }>
-            <{ for x in 0..9 }>
-                <{ x };>
-            <;>
-        <Block;>
+        <Block { foo: bar }> {
+            if (condition) {
+                <Block { foo: condition, baz: 7 }>;
+            }
+            <Block { baz: 72 }>;
+        }
+        <Block {}> {
+            for x in (0 .. 10) {
+                <Block { foo: x > 5, baz: 3 }> {
+                    <Block { foo: condition }>;
+                }
+                <Block { foo: false }>;
+            }
+        }
+        <Block { baz: 69 }> {
+            match (bar) {
+                true => {
+                    <Block { foo: true }>;
+                },
+                false => {
+                    <Block { foo: false }> {
+                        <Block { foo: true }>;
+                        <Block { foo: false }>;
+                    }
+                }
+            }
+        }
     }
 }
 

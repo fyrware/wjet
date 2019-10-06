@@ -5,8 +5,16 @@ pub struct Tree {
 impl Tree {
 
     pub fn new() -> Tree {
-        Tree {
+        return Tree {
             nodes: vec!()
-        }
+        };
+    }
+
+    pub fn branch(&self) -> &Tree {
+        return self;
+    }
+
+    pub fn climb(&self) -> &Tree {
+        return self;
     }
 }
