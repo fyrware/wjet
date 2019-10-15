@@ -2,7 +2,7 @@ use crate::wml::wml_token;
 
 #[macro_export]
 macro_rules! wml_markup {
-    // 0) <Widget { field_1: value_1, field_2: value_2 }> { ... }
+    // 0) <Widget> { ... } -or- <Widget { field_1: value_1, field_2: value_2 }> { ... }
     (|$tree: ident, $lexer: ident, $parent: ident| -> (<$widget: ty $({ $($field: ident: $value: expr),* })*> { $($body: tt)* } $($next: tt)*)) => {
         $tree.branch();
         {
@@ -13,12 +13,12 @@ macro_rules! wml_markup {
         $tree.climb();
         wml_markup!(|$tree, $lexer, $parent| -> ($($next)*));
     };
-    // 1) <Widget { field_1: value_1, field_2: value_2 }>
-    (|$tree: ident, $lexer: ident, $parent: ident| -> (<$widget: ty { $($field: ident: $value: expr),* }> $($next: tt)*)) => {
+    // 1) <Widget> -or- <Widget { field_1: value_1, field_2: value_2 }>
+    (|$tree: ident, $lexer: ident, $parent: ident| -> (<$widget: ty $({ $($field: ident: $value: expr),* })*> $($next: tt)*)) => {
         $tree.branch();
         {
             let mut wjet_parent = &$parent;
-            let mut wjet_widget = <$widget>::new(); $(wjet_widget.$field = $value;)*
+            let mut wjet_widget = <$widget>::new(); $($(wjet_widget.$field = $value;)*)*
         }
         $tree.climb();
         wml_markup!(|$tree, $lexer, $parent| -> ($($next)*));
@@ -30,7 +30,7 @@ macro_rules! wml_markup {
         }
         wml_markup!(|$tree, $lexer, $parent| -> ($($next)*));
     };
-    // 3) if (condition) { ... } else if (branch) { ... } else { ... }
+    // 3) if (condition) { ... } else { ... } -or-  if (condition) { ... } else if (branch) { ... } else { ... }
     (|$tree: ident, $lexer: ident, $parent: ident| -> (if ($condition: expr) { $($body: tt)* } $(else if ($branch: expr) { $($branch_body: tt)* })* else { $($else: tt)* } $($next: tt)*)) => {
         if $condition {
             wml_markup!(|$tree, $lexer, $parent| -> ($($body)*));
