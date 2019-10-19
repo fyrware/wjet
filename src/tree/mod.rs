@@ -4,11 +4,15 @@ pub mod walker;
 use crate::tree::branch::TreeBranch;
 use crate::tree::walker::TreeWalker;
 use crate::widget::Widget;
-use std::boxed::Box;
+use std::collections::HashMap;
+use std::rc::Rc;
+use std::string::String;
 use std::vec::Vec;
 
+static UNNAMED_BRANCH: &str = "";
+
 pub struct Tree {
-    branches: Vec<TreeBranch>,
+    children: Vec<TreeBranch>,
     depth: u8
 }
 
@@ -16,19 +20,40 @@ impl Tree {
 
     pub fn new() -> Tree {
         Tree {
-            branches: Vec::new(),
+            children: Vec::new(),
             depth: 0
         }
     }
 
-    pub fn roots(&mut self) -> &mut Vec<TreeBranch> {
-        &mut self.branches
+    pub fn branches(&mut self) -> &mut Vec<TreeBranch> {
+        &mut self.children
     }
 
-    pub fn branch(&mut self, host: Box<dyn Widget>) {
+    pub fn branch(&mut self, host: Rc<dyn Widget>, name: String) {
+
+        if name != UNNAMED_BRANCH.to_string() {
+            let clone = host.clone();
+        }
+
+        let depth = self.depth;
         let mut walker = TreeWalker::new(self);
-        let mut branches = walker.dive(depth);
-        branches.push(TreeBranch::new(host));
+        let mut value = TreeBranch::new(host);
+
+        if depth == 0 {
+            self.children.push(value);
+        }
+        else {
+            let mut base = walker.climb(depth);
+
+            match base {
+                Some(_) => {
+                    base.unwrap().branches().push(value);
+                },
+                None => {
+                    // I dunno, ask me later; probably nothing
+                }
+            }
+        }
 
         self.depth += 1;
     }

@@ -1,23 +1,25 @@
 use crate::tree::Tree;
 use crate::widget::Widget;
-use std::boxed::Box;
+use std::rc::Rc;
 
 macro_rules! wml_markup {
-    // 0) <Widget> { ... } -or- <Widget { field_1: value_1, field_2: value_2 }> { ... }
-    (|$tree: ident| -> (<$widget: ty $({ $($field: ident: $value: expr),* })*> { $($body: tt)* } $($next: tt)*)) => {
+    // 0) <Widget[ name ]> { ... } -or- <Widget[ name ] { field_1: value_1, field_2: value_2 }> { ... }
+    (|$tree: ident| -> (<$widget: ty $([ $name: expr ])* $({ $($field: ident: $value: expr),* })*> { $($body: tt)* } $($next: tt)*)) => {
         {
             let mut wml_widget = <$widget>::new(); $($(wml_widget.$field = $value;)*)*
-            $tree.branch(Box::new(wml_widget));
+            let mut wml_widget_name = "".to_string() $(+ &$name.to_string())*;
+            $tree.branch(Rc::new(wml_widget), wml_widget_name);
             wml_markup!(|$tree| -> ($($body)*));
             $tree.climb();
         }
         wml_markup!(|$tree| -> ($($next)*));
     };
-    // 1) <Widget> -or- <Widget { field_1: value_1, field_2: value_2 }>
-    (|$tree: ident| -> (<$widget: ty $({ $($field: ident: $value: expr),* })*> $($next: tt)*)) => {
+    // 1) <Widget[ name ]> -or- <Widget[ name ] { field_1: value_1, field_2: value_2 }>
+    (|$tree: ident| -> (<$widget: ty $([ $name: expr ])* $({ $($field: ident: $value: expr),* })*> $($next: tt)*)) => {
         {
             let mut wml_widget = <$widget>::new(); $($(wml_widget.$field = $value;)*)*
-            $tree.branch(Box::new(wml_widget));
+            let mut wml_widget_name = "".to_string() $(+ &$name.to_string())*;
+            $tree.branch(Rc::new(wml_widget), wml_widget_name);
             $tree.climb();
         }
         wml_markup!(|$tree| -> ($($next)*));
@@ -80,75 +82,5 @@ macro_rules! wml {
     };
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Test Implementation:
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-struct Block {
-    pub foo: bool,
-    pub baz: u8
-}
-
-impl Block {
-
-    fn new() -> Block {
-         Block {
-            foo: true,
-            baz: 0
-        }
-    }
-}
-
-impl Widget for Block {
-
-}
-
-fn render(condition: bool) -> Tree {
-    let bar = false;
-
-    wml! {
-        <Block> {
-            <Block>
-        }
-        <Block> {
-            let foo = false;
-            let name = "World";
-
-            if (!condition) {
-                <Block { foo: condition, baz: 7 }>
-            } else if (foo) {
-                <Block { foo: true }>
-            } else {
-                println!("Hello {}", name);
-            }
-            <Block { baz: 72 }>
-        }
-        <Block {}> {
-            // This will render the content 10 times
-            for x in (0..10) {
-                <Block { foo: x > 5, baz: 3 }> {
-                    <Block { foo: condition }>
-                }
-                <Block { foo: false }>
-            }
-        }
-        <Block { baz: 69 }> {
-            match (bar) {
-                true => {
-                    <Block { foo: true }>
-                },
-                false => {
-                    <Block { foo: false }> {
-                        <Block { foo: true }>
-                        <Block { foo: false }>
-                    }
-                }
-            }
-        }
-    }
-}
-
 #[test]
-fn oof() {
-    render(true);
-}
+fn noop() {}
