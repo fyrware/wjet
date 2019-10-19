@@ -1,5 +1,6 @@
-pub mod core;
-pub mod wml;
+pub mod markup;
+pub mod tree;
+pub mod widget;
 
 //#[cfg(test)]
 //mod tests;

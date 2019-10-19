@@ -5,3 +5,4 @@ authors = ["Nick Dugger <email@nickdugger.com>"]
 edition = "2018"
 
 [dependencies]
+indextree = "4.0.0"
