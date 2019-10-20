@@ -24,10 +24,3 @@ impl TreeBranch {
         &mut self.children
     }
 }
-
-impl Display for TreeBranch {
-
-    fn fmt(&self, fmt: &mut Formatter) -> Result {
-        write!(fmt, "TreeBranch[{}]", self.children.len())
-    }
-}
